@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 4</title>
+</head>
+
+<body>
+
+    <h1>SE3316 Quiz</h1>
+
+    <button id="start" onclick='getQuestions()'>Start Quiz</button>
+
+    <div id='quizDiv'>
+        
+    </div>
+    
+    
+</body>
+
+<script>
+
+    function getQuestions() { //sends request for the questions from the server
+        let xReq = new XMLHttpRequest();
+        xReq.onreadystatechange = displayQuestions;
+        
+        xReq.open('GET','/questions',true);
+        xReq.send();
+ 
+        let btn = document.getElementById('start'); //remove start quiz button
+        btn.remove();
+    }
+
+    function displayQuestions() { //formats the response questions into index.html
+        if (this.readyState == 4 && this.status == 200) {
+            let quizDiv = document.getElementById('quizDiv');
+            let questionList = JSON.parse(this.responseText);
+            let content ='';
+            let qCount = 0;
+
+            for (q of questionList){ //list each question
+
+                content += '<div>';
+                content += `<p1>${q.stem}</p1>`;
+                content += '<form action = "">';
+
+                let aCount = 0;
+
+                for (a of q.options) { //list each answer for each question
+                    content += `<input type="radio" id="${qCount},${aCount}" name="${qCount}" onchange="answerCheck(${qCount},${aCount})" value="${q.options[aCount]}">`
+                    content += `<label for="${q.options[aCount]}">${a}</label><br/>`;
+                    aCount++;
+                }
+                content += `<p id="answerLabel${qCount}" name="answers"></p>`;
+                content += '</form>';
+                content += '</div>';
+                content += '<br/>'; 
+                
+                qCount++;
+            }
+
+            content += '<p id="finalGrade">Final grade:</p>'; //final grade label
+
+            content += `<button onclick="submitAnswers()">Submit</button>`; //submit button and merge content
+
+            quizDiv.innerHTML = content;
+            
+        }
+    }
+
+    function answerCheck(qIndex,aIndex){ //sends an answer checking request, implemented for each answer
+        let xReq = new XMLHttpRequest();
+        xReq.onreadystatechange = showAnswer;
+        
+        xReq.open('GET', `/answers?q=${qIndex}&a=${aIndex}`,true);
+        xReq.send();
+    }
+
+    function showAnswer(){ //shows the response of whether answer was correct or incorrect
+        if(this.readyState == 4 && this.status == 200)
+        {
+            const answer = this.responseText.split(" ")
+            let answerLabel = document.getElementById('answerLabel' + answer[1]);
+            console.log(answer[0])
+            answerLabel.innerHTML = answer[0];
+        }
+    }
+
+    function submitAnswers(){
+        let xReq = new XMLHttpRequest();
+        xReq.onreadystatechange = finalGrade;
+
+        xReq.open('GET', `/`, true);
+        xReq.send();
+    }
+
+    function finalGrade() { //formats final grade based on the answer responses found earlier
+        if(this.readyState == 4 && this.status == 200)   {
+            let finalGrade = document.getElementById('finalGrade');
+            let correctAns = 0;
+            let total = 0;
+            let answerButtons = document.getElementsByName("answers");
+
+            for(let i = 0; i < answerButtons.length; i++){ //check each question and answer pair
+                if(answerButtons[i].innerHTML == "Correct!")
+                correctAns++;
+                total++;
+            }
+
+            finalGrade.innerHTML = "Final grade: " + correctAns / total * 100 + "%";
+
+        }
+    }
+
+</script>
+</html>
